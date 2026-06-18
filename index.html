@@ -426,7 +426,7 @@ async function simpan(staffName, kondisi, catatan) {
   try {
     const base64 = await blobToBase64(videoBlob);
     showProgress(true, 30, 'Mengupload ke Google Drive...');
-    const tanggal = now().toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const tanggal = now().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
     const resp = await fetch(BACKEND_URL, {
       method: 'POST',
       body: JSON.stringify({ type:'save', noResi, staff:staffName, tanggal, kondisi:kondisi||'Sesuai', catatan:catatan||'', videoBase64:base64.split(',')[1], mimeType:recMime, ext:recExt })
