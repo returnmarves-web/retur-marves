@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Marves Unboxing Returan</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+  .header { background: #4a1a2e; color: white; padding: 14px 16px; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .header h1 { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 12px; opacity: 0.7; }
+  .storage-wrap { display: flex; align-items: center; gap: 10px; }
+  .storage-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+  .storage-bar-fill { height: 100%; background: #e67e22; border-radius: 3px; transition: width 0.5s; }
+  .storage-bar-fill.warn { background: #f39c12; }
+  .storage-bar-fill.danger { background: #e74c3c; }
+  .storage-label { font-size: 11px; opacity: 0.8; white-space: nowrap; }
+  .storage-alert { background: #e74c3c; color: white; padding: 8px 16px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
+  .container { padding: 16px; max-width: 780px; margin: 0 auto; }
+  .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; border: 1px solid #eee; }
+  .card-title { font-size: 13px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .video-wrap { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
+  video { display: none; }
+  canvas#display-canvas { width: 100%; height: 100%; display: block; border-radius: 8px; }
+  .rec-indicator { position: absolute; top: 10px; left: 10px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; }
+  .rec-dot { width: 8px; height: 8px; background: #e74c3c; border-radius: 50%; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .rec-timer { color: white; font-size: 13px; font-weight: 600; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .btn { padding: 12px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-record { background: #4a1a2e; color: white; }
+  .btn-stop { background: #e74c3c; color: white; }
+  .btn-retry { background: #f39c12; color: white; grid-column: 1/-1; }
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  input.scan-field { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: #fafafa; color: #1a1a1a; transition: border-color 0.2s; }
+  input.scan-field:focus { outline: none; border-color: #4a1a2e; background: white; }
+  input.scan-field.active { border-color: #e67e22; background: #fef9f0; }
+  input.scan-field.filled { border-color: #8e44ad; background: #f5f0ff; }
+  select.cam-sel { width:100%; padding:10px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:14px; background:#fafafa; }
+  .date-display { padding: 12px; background: #f0f0f0; border-radius: 8px; font-size: 15px; font-weight: 600; color: #4a1a2e; }
+  .status-bar { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .status-bar.error { background: #fde8e8; border: 1px solid #e74c3c; color: #a32d2d; }
+  .status-bar.success { background: #d4edda; border: 1px solid #27ae60; color: #155724; }
+  .status-bar.info { background: #fef3e2; border: 1px solid #e67e22; color: #935610; }
+  .progress-wrap { margin-top: 10px; display: none; }
+  .progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #e67e22; width: 0%; transition: width 0.3s; border-radius: 2px; }
+  .progress-label { font-size: 12px; color: #888; margin-top: 4px; text-align: center; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-ready { background: #fef3e2; color: #935610; }
+  .badge-rec { background: #fde8e8; color: #a32d2d; }
+  .badge-done { background: #d4edda; color: #155724; }
+  .badge-off { background: #f0f0f0; color: #888; }
+  .scan-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .scan-hint.active { color: #e67e22; font-weight: 600; }
+  .flow-steps { display: flex; gap: 8px; margin-bottom: 16px; }
+  .step { flex: 1; padding: 10px 8px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: 600; border: 1.5px solid #eee; color: #aaa; background: #fafafa; transition: all 0.2s; }
+  .step.active { border-color: #e67e22; color: #935610; background: #fef3e2; }
+  .step.done { border-color: #8e44ad; color: #8e44ad; background: #f5f0ff; }
+  .step-num { font-size: 18px; display: block; margin-bottom: 4px; }
+  .tab-bar { display: flex; background: white; border-radius: 10px; padding: 4px; margin-bottom: 14px; border: 1px solid #eee; }
+  .tab { flex: 1; padding: 10px; text-align: center; border-radius: 7px; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: #4a1a2e; color: white; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .search-input { width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 15px; margin-bottom: 12px; }
+  .result-item { background: white; border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 1px solid #eee; }
+  .result-no { font-size: 15px; font-weight: 700; color: #4a1a2e; margin-bottom: 4px; }
+  .result-meta { font-size: 13px; color: #888; }
+  .result-link { display: inline-block; margin-top: 8px; font-size: 13px; color: #8e44ad; font-weight: 600; text-decoration: none; }
+  .result-link:hover { text-decoration: underline; }
+  .empty { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; }
+  .loading { text-align: center; padding: 20px; color: #888; font-size: 14px; }
+  .kondisi-btn { width: 100%; padding: 14px; border-radius: 8px; border: 1.5px solid; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 10px; text-align: left; transition: opacity 0.15s, transform 0.1s; }
+  .kondisi-btn:active { transform: scale(0.98); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>📦 Marves Unboxing Returan</h1>
+      <div class="header-sub">Dokumentasi Paket Masuk &nbsp;·&nbsp; <span id="clock-header"></span></div>
+    </div>
+  </div>
+  <div class="storage-wrap">
+    <span class="storage-label" id="storage-label">Memuat storage...</span>
+    <div class="storage-bar-bg">
+      <div class="storage-bar-fill" id="storage-fill" style="width:0%"></div>
+    </div>
+    <span class="storage-label" id="storage-pct">-</span>
+  </div>
+</div>
+<div class="storage-alert" id="storage-alert">⚠️ Storage hampir penuh! Segera upgrade Google Drive.</div>
+
+<div class="container">
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('rekam')">Rekam</div>
+    <div class="tab" onclick="switchTab('cari')">Cari Resi</div>
+  </div>
+  <div id="status-bar" class="status-bar"></div>
+
+  <div id="tab-rekam" class="section active">
+    <div class="flow-steps">
+      <div class="step" id="step1"><span class="step-num">1️⃣</span>Scan Resi</div>
+      <div class="step" id="step2"><span class="step-num">🎥</span>Unboxing</div>
+      <div class="step" id="step3"><span class="step-num">2️⃣</span>Staff + Kondisi</div>
+      <div class="step" id="step4"><span class="step-num">☁️</span>Upload</div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Pilih Kamera</label>
+        <select id="cam-select" class="cam-sel" onchange="initCam()">
+          <option value="">— Kamera default —</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="card-title" style="margin:0;">Kamera</div>
+        <span id="rec-badge" class="badge badge-off">Belum aktif</span>
+      </div>
+      <div class="video-wrap">
+        <video id="preview" autoplay muted playsinline></video>
+        <canvas id="display-canvas" width="1280" height="720"></canvas>
+        <div id="rec-indicator" class="rec-indicator" style="display:none;">
+          <div class="rec-dot"></div>
+          <span class="rec-timer" id="timer">00:00</span>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-record" id="btn-start" onclick="startRec()" disabled>▶ Manual Rekam</button>
+        <button class="btn btn-stop" id="btn-stop" onclick="stopAndSave()" disabled>⏹ Manual Stop</button>
+        <button class="btn btn-retry" onclick="initCam()">🔄 Aktifkan / Coba Lagi Kamera</button>
+      </div>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-label" id="progress-label">Mengupload...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Scan Data Paket Returan</div>
+      <div class="field">
+        <label>Tanggal Unboxing</label>
+        <div class="date-display" id="tanggal-display"></div>
+      </div>
+      <div class="field">
+        <label>① No. Resi Returan <span style="color:#e67e22;">(Scan → Auto Mulai Rekam)</span></label>
+        <input type="text" id="inp-resi" class="scan-field active" placeholder="Arahkan scanner ke resi paket returan...">
+        <div class="scan-hint active" id="hint-resi">⬆ Scan resi untuk mulai merekam otomatis</div>
+      </div>
+      <div class="field">
+        <label>② ID Staff <span style="color:#e74c3c;">(Scan → Stop Rekam)</span></label>
+        <input type="text" id="inp-staff" class="scan-field" placeholder="Tunggu rekaman berjalan dulu..." disabled>
+        <div class="scan-hint" id="hint-staff">Aktif setelah rekaman berjalan</div>
+      </div>
+    </div>
+
+    <div class="card" id="kondisi-card" style="display:none; border:2px solid #e67e22;">
+      <div class="card-title">③ Kondisi Paket Returan — Pilih untuk Simpan</div>
+      <button class="kondisi-btn" style="background:#d4edda; color:#155724; border-color:#27ae60;" onclick="pilihKondisi('Sesuai')">
+        ✅ Sesuai — produk Marves, kondisi baik
+      </button>
+      <button class="kondisi-btn" style="background:#fde8e8; color:#a32d2d; border-color:#e74c3c;" onclick="pilihKondisi('Tidak Lengkap')">
+        📦 Tidak lengkap — jumlah item kurang dari yang diretur
+      </button>
+      <button class="kondisi-btn" style="background:#fff3cd; color:#856404; border-color:#f39c12;" onclick="pilihKondisi('Tidak Layak')">
+        ⚠️ Tidak layak — kotor / rusak / bekas dipakai
+      </button>
+      <button class="kondisi-btn" style="background:#fde8e8; color:#a32d2d; border-color:#e74c3c;" onclick="pilihKondisi('Bukan Produk Marves')">
+        🚨 Bukan produk Marves
+      </button>
+      <div class="field" style="margin-top:4px; margin-bottom:0;">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="inp-catatan" class="scan-field" placeholder="Mis: hanya 1 pcs, noda di lengan, baju merk lain...">
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-cari" class="section">
+    <div class="card">
+      <div class="card-title">Cari Rekaman Unboxing</div>
+      <input class="search-input" type="text" id="search-inp" placeholder="Ketik no. resi..." oninput="debounceSearch()">
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<script>
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyUEj9Y2DN_r_5kM4GGFME_25KxZWS6dsyggEsqj2DClo5ATu50N0hn08wV1W3kmLqkfw/exec';
+
+let stream = null, recorder = null, chunks = [], videoBlob = null;
+let timerInt = null, secs = 0, searchTimer = null;
+let isRecording = false, noResi = '', camActive = false;
+let recMime = 'video/mp4', recExt = 'mp4';
+let serverTimeOffset = 0, pendingStaff = '';
+
+const video = document.getElementById('preview');
+const canvas = document.getElementById('display-canvas');
+const ctx = canvas.getContext('2d');
+
+window.onload = async () => {
+  await syncTime();
+  setTanggal();
+  setInterval(updateClock, 1000);
+  startCanvasLoop();
+  initCam();
+  loadStorage();
+  setInterval(loadStorage, 5 * 60 * 1000);
+  setStep(1);
+  document.getElementById('inp-resi').focus();
+  document.getElementById('inp-resi').addEventListener('keydown', onResiScan);
+  document.getElementById('inp-staff').addEventListener('keydown', onStaffScan);
+};
+
+async function syncTime() {
+  try {
+    const r = await fetch('https://worldtimeapi.org/api/timezone/Asia/Jakarta');
+    const d = await r.json();
+    serverTimeOffset = new Date(d.datetime).getTime() - Date.now();
+  } catch(e) { serverTimeOffset = 0; }
+}
+
+function now() { return new Date(Date.now() + serverTimeOffset); }
+
+function setTanggal() {
+  document.getElementById('tanggal-display').textContent =
+    now().toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+
+function updateClock() {
+  const n = now();
+  document.getElementById('clock-header').textContent =
+    n.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' }) + '  ' +
+    n.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+async function loadStorage() {
+  try {
+    const r = await fetch(`${BACKEND_URL}?action=storage`);
+    const d = await r.json();
+    if (!d.ok) return;
+    const pct = d.pct;
+    const usedGB = (d.used / 1e9).toFixed(1);
+    const limitGB = (d.limit / 1e9).toFixed(1);
+    const fill = document.getElementById('storage-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'storage-bar-fill' + (pct >= 90 ? ' danger' : pct >= 75 ? ' warn' : '');
+    document.getElementById('storage-label').textContent = `Storage: ${usedGB} GB / ${limitGB} GB`;
+    document.getElementById('storage-pct').textContent = pct + '%';
+    document.getElementById('storage-alert').style.display = pct >= 90 ? 'block' : 'none';
+  } catch(e) {
+    document.getElementById('storage-label').textContent = 'Storage: tidak tersedia';
+  }
+}
+
+async function initCam() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  camActive = false; setBadge('off', 'Menghubungkan...');
+  const selectedId = document.getElementById('cam-select').value;
+  const videoConstraint = selectedId
+    ? { deviceId: { exact: selectedId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    : { width: { ideal: 1280 }, height: { ideal: 720 } };
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraint, audio: true }); }
+  catch(e1) {
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraint }); }
+    catch(e2) {
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: true }); }
+      catch(e3) {
+        setBadge('off', 'Kamera gagal');
+        let msg = 'Kamera tidak bisa diakses. ';
+        if (e3.name === 'NotAllowedError') msg += 'Izin ditolak — klik gembok di address bar → Allow → Coba Lagi.';
+        else if (e3.name === 'NotFoundError') msg += 'Tidak ada kamera — pastikan webcam tercolok.';
+        else if (e3.name === 'NotReadableError') msg += 'Kamera dipakai aplikasi lain — tutup dulu lalu Coba Lagi.';
+        else msg += '(' + e3.name + ')';
+        showStatus(msg, 'error'); return;
+      }
+    }
+  }
+  video.srcObject = stream;
+  try { await video.play(); } catch(e) {}
+  video.onloadedmetadata = async () => {
+    canvas.width = video.videoWidth || 1280; canvas.height = video.videoHeight || 720;
+    camActive = true; setBadge('ready', 'Siap');
+    document.getElementById('btn-start').disabled = false;
+    showStatus('✅ Kamera aktif — scan resi returan untuk mulai', 'success');
+    await isiDaftarKamera();
+  };
+  if (video.readyState >= 1) {
+    canvas.width = video.videoWidth || 1280; canvas.height = video.videoHeight || 720;
+    camActive = true; setBadge('ready', 'Siap');
+    document.getElementById('btn-start').disabled = false;
+    await isiDaftarKamera();
+  }
+}
+
+async function isiDaftarKamera() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d => d.kind === 'videoinput');
+    const sel = document.getElementById('cam-select');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Kamera default —</option>' +
+      cams.map((c,i) => `<option value="${c.deviceId}">${c.label || 'Kamera '+(i+1)}</option>`).join('');
+    if (cur) sel.value = cur;
+  } catch(e) {}
+}
+
+function startCanvasLoop() {
+  setInterval(() => {
+    const w = canvas.width, h = canvas.height;
+    if (camActive && video.readyState >= 2) {
+      ctx.save(); ctx.translate(w, h); ctx.rotate(Math.PI);
+      ctx.drawImage(video, 0, 0, w, h); ctx.restore();
+    } else {
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#444'; ctx.font = 'bold ' + Math.round(h*.04) + 'px sans-serif';
+      ctx.textAlign = 'center'; ctx.fillText('KAMERA BELUM AKTIF', w/2, h/2); ctx.textAlign = 'left';
+    }
+    const n = now();
+    const dateStr = n.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const timeStr = n.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const stamp = `MARVES UNBOXING RETURAN  |  ${dateStr}  ${timeStr}${noResi ? '  |  RESI: ' + noResi : ''}`;
+    ctx.font = 'bold ' + Math.round(h*.028) + 'px monospace';
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, h - Math.round(h*.06), w, Math.round(h*.06));
+    ctx.fillStyle = '#ff9500'; ctx.textBaseline = 'middle';
+    ctx.fillText(stamp, 12, h - Math.round(h*.03));
+  }, 1000/30);
+}
+
+function startRec() {
+  if (!camActive) { showStatus('Kamera belum aktif', 'error'); return; }
+  chunks = []; videoBlob = null;
+  const canvasStream = canvas.captureStream(30);
+  const audioTrack = stream && stream.getAudioTracks()[0];
+  if (audioTrack) canvasStream.addTrack(audioTrack);
+  const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1'
+    : MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+    : MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+  recMime = mimeType.startsWith('video/mp4') ? 'video/mp4' : 'video/webm';
+  recExt = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+  recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 400000 });
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => { videoBlob = new Blob(chunks, { type: recMime }); };
+  recorder.start();
+  isRecording = true; secs = 0;
+  document.getElementById('rec-indicator').style.display = 'flex';
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  setBadge('rec', '🔴 Merekam');
+  timerInt = setInterval(() => {
+    secs++;
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    document.getElementById('timer').textContent = m+':'+s;
+  }, 1000);
+}
+
+function stopRec() {
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  clearInterval(timerInt); isRecording = false;
+  document.getElementById('rec-indicator').style.display = 'none';
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  setBadge('done', '✅ Video siap');
+}
+
+function onResiScan(e) {
+  if (e.key === 'Enter') {
+    const val = document.getElementById('inp-resi').value.trim();
+    if (!val) return;
+    if (!camActive) { showStatus('Kamera belum aktif', 'error'); return; }
+    if (isRecording) { showStatus('Rekaman sudah berjalan', 'info'); return; }
+    noResi = val;
+    const resi = document.getElementById('inp-resi');
+    resi.classList.remove('active'); resi.classList.add('filled'); resi.disabled = true;
+    const staff = document.getElementById('inp-staff');
+    staff.disabled = false; staff.classList.add('active');
+    document.getElementById('hint-staff').textContent = '⬆ Scan ID staff untuk stop rekaman';
+    document.getElementById('hint-staff').classList.add('active');
+    startRec(); setStep(2);
+    showStatus(`🎥 Rekaman dimulai (${recExt.toUpperCase()}) — unboxing sekarang, scan ID staff kalau selesai`, 'info');
+    staff.focus();
+  }
+}
+
+function onStaffScan(e) {
+  if (e.key === 'Enter') {
+    const val = document.getElementById('inp-staff').value.trim();
+    if (!val) return;
+    if (!isRecording) { showStatus('Belum ada rekaman', 'error'); return; }
+    setStep(3); stopRec();
+    pendingStaff = val;
+    document.getElementById('kondisi-card').style.display = 'block';
+    document.getElementById('kondisi-card').scrollIntoView({ behavior: 'smooth' });
+    showStatus('Rekaman selesai — pilih kondisi paket untuk menyimpan', 'info');
+  }
+}
+
+function stopAndSave() {
+  const staff = document.getElementById('inp-staff').value.trim();
+  if (!staff) { showStatus('Isi nama staff dulu', 'error'); return; }
+  stopRec(); pendingStaff = staff;
+  document.getElementById('kondisi-card').style.display = 'block';
+  document.getElementById('kondisi-card').scrollIntoView({ behavior: 'smooth' });
+  showStatus('Rekaman selesai — pilih kondisi paket untuk menyimpan', 'info');
+}
+
+function pilihKondisi(kondisi) {
+  const catatan = document.getElementById('inp-catatan').value.trim();
+  document.getElementById('kondisi-card').style.display = 'none';
+  setStep(4); simpan(pendingStaff, kondisi, catatan);
+}
+
+async function simpan(staffName, kondisi, catatan) {
+  if (!noResi) { showStatus('No. resi kosong', 'error'); return; }
+  if (!videoBlob) { showStatus('Video belum siap', 'error'); return; }
+  showProgress(true, 0, 'Menyiapkan video...');
+  try {
+    const base64 = await blobToBase64(videoBlob);
+    showProgress(true, 30, 'Mengupload ke Google Drive...');
+    const tanggal = now().toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const resp = await fetch(BACKEND_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type:'save', noResi, staff:staffName, tanggal, kondisi:kondisi||'Sesuai', catatan:catatan||'', videoBase64:base64.split(',')[1], mimeType:recMime, ext:recExt })
+    });
+    showProgress(true, 80, 'Menyimpan ke spreadsheet...');
+    const result = await resp.json();
+    if (result.ok) {
+      showProgress(true, 100, 'Selesai!');
+      setTimeout(() => { showProgress(false); showStatus('✅ Tersimpan! Siap untuk paket berikutnya.', 'success'); resetForm(); setStep(1); loadStorage(); }, 800);
+    } else throw new Error(result.error || 'Gagal menyimpan');
+  } catch(e) { showProgress(false); showStatus('Gagal upload: ' + e.message, 'error'); }
+}
+
+function resetForm() {
+  noResi = ''; videoBlob = null; isRecording = false; pendingStaff = '';
+  document.getElementById('kondisi-card').style.display = 'none';
+  document.getElementById('inp-catatan').value = '';
+  const resi = document.getElementById('inp-resi');
+  resi.value = ''; resi.disabled = false; resi.classList.remove('filled'); resi.classList.add('active');
+  const staff = document.getElementById('inp-staff');
+  staff.value = ''; staff.disabled = true; staff.classList.remove('active','filled');
+  document.getElementById('hint-staff').textContent = 'Aktif setelah rekaman berjalan';
+  document.getElementById('hint-staff').classList.remove('active');
+  setBadge('ready', 'Siap'); resi.focus();
+}
+
+function blobToBase64(blob) {
+  return new Promise((res,rej) => { const r = new FileReader(); r.onload = ()=>res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+}
+
+function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(cariResi, 500); }
+
+async function cariResi() {
+  const q = document.getElementById('search-inp').value.trim();
+  if (!q) { document.getElementById('search-results').innerHTML = ''; return; }
+  document.getElementById('search-results').innerHTML = '<div class="loading">Mencari...</div>';
+  try {
+    const resp = await fetch(`${BACKEND_URL}?q=${encodeURIComponent(q)}`);
+    const data = await resp.json();
+    if (!data.results || data.results.length === 0) {
+      document.getElementById('search-results').innerHTML = '<div class="empty">Tidak ada hasil untuk "<b>' + q + '</b>"</div>'; return;
+    }
+    document.getElementById('search-results').innerHTML = data.results.map(r => {
+      const k = r['Kondisi'] || 'Sesuai';
+      let badge = '<span class="badge" style="background:#d4edda;color:#155724;">✅ Sesuai</span>';
+      if (k === 'Tidak Lengkap') badge = '<span class="badge" style="background:#fde8e8;color:#a32d2d;">📦 Tidak Lengkap</span>';
+      if (k === 'Tidak Layak') badge = '<span class="badge" style="background:#fff3cd;color:#856404;">⚠️ Tidak Layak</span>';
+      if (k === 'Bukan Produk Marves') badge = '<span class="badge" style="background:#fde8e8;color:#a32d2d;">🚨 Bukan Marves</span>';
+      return `<div class="result-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div class="result-no">📦 ${r['No Resi']}</div>${badge}
+        </div>
+        <div class="result-meta">👤 ${r['Staff']} &nbsp;·&nbsp; 📅 ${r['Timestamp']}</div>
+        ${r['Catatan'] ? `<div class="result-meta" style="margin-top:4px;">📝 ${r['Catatan']}</div>` : ''}
+        <a class="result-link" href="${r['Link Video']}" target="_blank">🎥 Lihat Video Unboxing →</a>
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('search-results').innerHTML = '<div class="empty">Gagal mengambil data</div>'; }
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step'+i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  }
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['rekam','cari'][i]===t));
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function setBadge(type, text) { const b = document.getElementById('rec-badge'); b.textContent = text; b.className = 'badge badge-'+type; }
+
+function showStatus(msg, type='info') {
+  const el = document.getElementById('status-bar');
+  if (!msg) { el.style.display='none'; return; }
+  el.textContent = msg; el.className = 'status-bar '+type; el.style.display = 'block';
+  if (type==='success') setTimeout(()=>el.style.display='none', 5000);
+}
+
+function showProgress(show, pct=0, label='') {
+  document.getElementById('progress-wrap').style.display = show ? 'block' : 'none';
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-label').textContent = label;
+}
+
+fetch(BACKEND_URL, { method:'POST', body: JSON.stringify({ type:'init' }) }).catch(()=>{});
+</script>
+</body>
+</html>
